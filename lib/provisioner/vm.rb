@@ -13,16 +13,18 @@ module Provisioner
     def customize vm_config
       configure_network_interfaces vm_config[:network_connections]
       if hardware_config = vm_config[:hardware_config]
-        put_cpu(hardware_config[:cpu])
-        put_memory(hardware_config[:memory])
+        update_cpu_count(hardware_config[:cpu])
+        update_memory_size_in_mb(hardware_config[:memory])
       end
       add_extra_disks(vm_config[:disks])
-      configure_guest_customization_section(@vapp.name, 
-                                            vm_config[:bootstrap][:script_name], 
-                                            vm_config[:bootstrap][:facts] )
+      configure_guest_customization_section(
+            @vapp.name,
+            vm_config[:bootstrap][:script_path],
+            vm_config[:bootstrap][:facts] 
+            )
     end
 
-    def put_memory(new_memory)
+    def update_memory_size_in_mb(new_memory)
       unless memory.to_i == new_memory
         @fog_interface.put_memory(id, new_memory)
       end
@@ -38,8 +40,8 @@ module Provisioner
       cpu_item[:'rasd:VirtualQuantity']
     end
 
-    def put_cpu(new_cpu)
-      unless cpu.to_i == new_cpu
+    def update_cpu_count(new_cpu_count)
+      unless cpu.to_i == new_cpu_count
         @fog_interface.put_cpu(id, new_cpu)
       end
     end
@@ -74,10 +76,10 @@ module Provisioner
       @fog_interface.put_network_connection_system_section_vapp(id, section)
     end
 
-    def configure_guest_customization_section name, preamble_path, facts={} 
-      @fog_interface.put_guest_customization_section(@id, name, generate_preamble(preamble_path, facts)) 
-    end  
-    
+    def configure_guest_customization_section name, preamble_path, facts={}
+      @fog_interface.put_guest_customization_section(@id, name, generate_preamble(preamble_path, facts))
+    end
+
     def generate_preamble(script_path, facts)
       script = ERB.new(File.read(script_path), nil, '>-').result(binding)
       #Open3.capture2(File.join(root, 'bin/minifier.py'), stdin_data: script).first

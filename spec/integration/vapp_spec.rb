@@ -21,6 +21,7 @@ describe Provisioner::Vapp do
     }
 
     @vapp = Provisioner::Vapp.new(@fog_interface).provision(@vapp_config, TEST_VDC, template)
+    @vm = @vapp[:Children][:Vm].first
   end
 
   context 'provision vapp' do
@@ -32,22 +33,19 @@ describe Provisioner::Vapp do
     end
 
     it "should create vm within vapp" do
-      @vapp[:Children][:Vm].first.should_not be_nil
+      @vm.should_not be_nil
     end
 
   end
 
   context "customize vm" do
     it "change cpu for given vm" do
-      vm = @vapp[:Children][:Vm].first
-
-      extract_memory(vm).should == '4096'
-      extract_cpu(vm).should == '1'
+      extract_memory(@vm).should == '4096'
+      extract_cpu(@vm).should == '1'
     end
 
     it "should attach extra hard disks to vm" do
-      vm = @vapp[:Children][:Vm].first
-      disks = extract_disks(vm)
+      disks = extract_disks(@vm)
       disks.count.should == 3
       @vapp_config[:vm][:disks].each do |new_disk|
          disks.should include(new_disk)
@@ -55,14 +53,13 @@ describe Provisioner::Vapp do
     end
 
     it "should configure the vm network interface" do
-      vm = @vapp[:Children][:Vm].first
-      vm_network_connection = vm[:NetworkConnectionSection][:NetworkConnection]
+      vm_network_connection = @vm[:NetworkConnectionSection][:NetworkConnection]
       vm_network_connection.should_not be_nil
       vm_network_connection.count.should == 2
 
       primary_nic = vm_network_connection.detect{|connection| connection[:network] == 'Default'}
       primary_nic[:network].should == 'Default'
-      primary_nic[:NetworkConnectionIndex].should == vm[:NetworkConnectionSection][:PrimaryNetworkConnectionIndex]
+      primary_nic[:NetworkConnectionIndex].should == @vm[:NetworkConnectionSection][:PrimaryNetworkConnectionIndex]
       primary_nic[:IpAddress].should == '192.168.2.10'
       primary_nic[:IpAddressAllocationMode].should == 'MANUAL'
 
@@ -75,8 +72,8 @@ describe Provisioner::Vapp do
     end
 
     it 'should assign guest customization script to a VM' do
-      vm[:GuestCustomizationSection][:CustomizationScript].should =~ 'message: hello world'  
-      vm[:GuestCustomizationSection][:ComputerName].should == 'test-vm'
+      @vm[:GuestCustomizationSection][:CustomizationScript].should =~ /message: hello world/
+      @vm[:GuestCustomizationSection][:ComputerName].should == @vapp_config[:name]
     end
 
   end
