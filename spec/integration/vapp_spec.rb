@@ -2,7 +2,7 @@ require_relative '../spec_helper'
 
 describe Provisioner::Vapp do
   before(:all) do
-    @fog_interface = FogInterface.new(:test)
+    @fog_interface = FogInterface.new
     TEST_VDC = 'GDS Networking API Testing (IL0-DEVTEST-BASIC)'
     template = @fog_interface.template('walker-ci', 'nick-method-precise64')
     
