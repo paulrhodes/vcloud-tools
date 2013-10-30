@@ -7,7 +7,7 @@ module Provisioner
     end
 
     def provision config, vdc_name, template
-      @vdc = @fog_interface.vdc_object_by_name vdc_name 
+      @vdc = @fog_interface.vdc_object_by_name vdc_name
       @name = config[:name]
       network_names = config[:vm][:network_connections].collect { |h| h[:name] }
       networks = @fog_interface.find_networks(network_names, vdc_name)
