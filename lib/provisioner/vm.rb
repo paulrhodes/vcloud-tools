@@ -42,7 +42,7 @@ module Provisioner
 
     def update_cpu_count(new_cpu_count)
       unless cpu.to_i == new_cpu_count
-        @fog_interface.put_cpu(id, new_cpu)
+        @fog_interface.put_cpu(id, new_cpu_count)
       end
     end
 
