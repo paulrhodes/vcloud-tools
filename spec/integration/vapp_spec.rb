@@ -4,7 +4,9 @@ describe Provisioner::Vapp do
   before(:all) do
     @fog_interface = FogInterface.new(:test)
     TEST_VDC = 'GDS Networking API Testing (IL0-DEVTEST-BASIC)'
-    template = @fog_interface.template('walker-ci', 'ubuntu-precise-image-2')
+    template = @fog_interface.template('walker-ci', 'nick-method-precise64')
+    
+    script_path = File.join(File.dirname(__FILE__), "../data/default_preamble.sh.erb")
     @vapp_config = {
         :name => "vapp-vcloud-tools-tests-#{Time.now.strftime('%s')}",
         :vm => {
@@ -14,8 +16,10 @@ describe Provisioner::Vapp do
           },
           :disks => [{:size => '1024', :name => 'Hard disk 2'  }, {:size => '2048', :name => 'Hard disk 3'}],
           :network_connections => [{:name => 'Default', :ip_address => '192.168.2.10'}, {:name => 'NetworkTest2', :ip_address => '192.168.1.10'}],
-        }
+          :bootstrap => {:script_path => script_path , :facts => { :message => 'hello world' } },
+        },
     }
+
     @vapp = Provisioner::Vapp.new(@fog_interface).provision(@vapp_config, TEST_VDC, template)
   end
 
@@ -24,7 +28,7 @@ describe Provisioner::Vapp do
       @vapp[:name].should == @vapp_config[:name]
       @vapp[:'ovf:NetworkSection'][:'ovf:Network'].count.should == 2
       vapp_networks = @vapp[:'ovf:NetworkSection'][:'ovf:Network'].collect {|connection| connection[:ovf_name]}
-      vapp_networks.should == ['Default', 'NetworkTest2']
+      vapp_networks.should =~ ['Default', 'NetworkTest2']
     end
 
     it "should create vm within vapp" do
@@ -69,10 +73,18 @@ describe Provisioner::Vapp do
       second_nic[:IpAddressAllocationMode].should == 'MANUAL'
 
     end
+
+    it 'should assign guest customization script to a VM' do
+      vm[:GuestCustomizationSection][:CustomizationScript].should =~ 'message: hello world'  
+      vm[:GuestCustomizationSection][:ComputerName].should == 'test-vm'
+    end
+
   end
 
   after(:all) do
-    @fog_interface.delete_vapp(@vapp[:href].split('/').last).should == true
+    unless ENV['VCLOUD_TOOLS_RSPEC_NO_DELETE_VAPP']
+      @fog_interface.delete_vapp(@vapp[:href].split('/').last).should == true
+    end
   end
 
 end

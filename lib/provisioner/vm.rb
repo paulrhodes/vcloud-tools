@@ -17,6 +17,9 @@ module Provisioner
         put_memory(hardware_config[:memory])
       end
       add_extra_disks(vm_config[:disks])
+      configure_guest_customization_section(@vapp.name, 
+                                            vm_config[:bootstrap][:script_name], 
+                                            vm_config[:bootstrap][:facts] )
     end
 
     def put_memory(new_memory)
@@ -71,12 +74,18 @@ module Provisioner
       @fog_interface.put_network_connection_system_section_vapp(id, section)
     end
 
-    private
+    def configure_guest_customization_section name, preamble_path, facts={} 
+      @fog_interface.put_guest_customization_section(@id, name, generate_preamble(preamble_path, facts)) 
+    end  
+    
+    def generate_preamble(script_path, facts)
+      script = ERB.new(File.read(script_path), nil, '>-').result(binding)
+      #Open3.capture2(File.join(root, 'bin/minifier.py'), stdin_data: script).first
+    end
 
     def virtual_hardware_section
       vm[:'ovf:VirtualHardwareSection'][:'ovf:Item']
     end
-
 
   end
 end
