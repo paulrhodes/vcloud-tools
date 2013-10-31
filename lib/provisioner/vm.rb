@@ -73,15 +73,34 @@ module Provisioner
         connection[:IpAddressAllocationMode] = ip_address ? 'MANUAL' : 'DHCP'
         connection
       end
-      @fog_interface.put_network_connection_system_section_vapp(id, section)
+      begin
+        @fog_interface.put_network_connection_system_section_vapp(id, section)
+      rescue
+        puts "\n"
+        puts "=== networks_config:"
+        pp networks_config
+        puts "=== PUT request data section:"
+        pp section
+        raise
+      end
     end
 
     def configure_guest_customization_section name, preamble_path, facts={}
-      @fog_interface.put_guest_customization_section(@id, name, generate_preamble(preamble_path, facts))
+      interpolated_preamble = generate_preamble(preamble_path, facts)
+      begin
+        @fog_interface.put_guest_customization_section(@id, name, interpolated_preamble)
+      rescue
+        puts "\n"
+        puts "=== facts:"
+        pp facts
+        puts "=== interpolated preamble:"
+        pp interpolated_preamble
+        raise
+      end
     end
 
     def generate_preamble(script_path, facts)
-      script = ERB.new(File.read(script_path), nil, '>-').result(binding)
+      ERB.new(File.read(script_path), nil, '>-').result(binding)
       #Open3.capture2(File.join(root, 'bin/minifier.py'), stdin_data: script).first
     end
 
