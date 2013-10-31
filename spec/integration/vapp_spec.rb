@@ -12,7 +12,7 @@ describe Provisioner::Vapp do
         :vm => {
           :hardware_config => {
               :memory => 4096,
-              :cpu => 1
+              :cpu => 2
           },
           :disks => [{:size => '1024', :name => 'Hard disk 2'  }, {:size => '2048', :name => 'Hard disk 3'}],
           :network_connections => [{:name => 'Default', :ip_address => '192.168.2.10'}, {:name => 'NetworkTest2', :ip_address => '192.168.1.10'}],
@@ -40,8 +40,8 @@ describe Provisioner::Vapp do
 
   context "customize vm" do
     it "change cpu for given vm" do
-      extract_memory(@vm).should == '4096'
-      extract_cpu(@vm).should == '1'
+      extract_memory(@vm).should == @vapp_config[:vm][:hardware_config][:memory].to_s
+      extract_cpu(@vm).should == @vapp_config[:vm][:hardware_config][:cpu].to_s
     end
 
     it "should attach extra hard disks to vm" do
