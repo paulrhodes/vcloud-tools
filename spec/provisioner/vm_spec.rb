@@ -7,6 +7,8 @@ module Provisioner
     before(:each) do
       @vm_id   = '1'
       @vapp_name = 'test-vm-1'
+      @mock_vm_memory_size = 1024
+      @mock_vm_cpu_count = 1
       @fog_interface = double(:fog_interface)
       @mock_vapp     = double(:vapp)
       @mock_vapp.stub(:name).and_return(@vapp_name)
@@ -15,38 +17,63 @@ module Provisioner
         :href => "vm-href/#{@vm_id}",
         :'ovf:VirtualHardwareSection' => {
           :'ovf:Item' => [
-            { # memory
+            {
               :'rasd:ResourceType'    => '4',
-              :'rasd:VirtualQuantity' => '1024',
+              :'rasd:VirtualQuantity' => "#{@mock_vm_memory_size}",
             },
-            { # cpu count
+            {
               :'rasd:ResourceType' => '3',
-              :'rasd:ResourceType' => '1',
+              :'rasd:VirtualQuantity' => "#{@mock_vm_cpu_count}",
             }
           ]
         }
       }
+      @vm = Provisioner::Vm.new(@fog_interface, @mock_vm, @mock_vapp)
+
     end
 
     describe '#update_memory_size_in_mb' do
       context "update memory in VM" do
-        it "should not allow memory size < 64MB"
-        it "should not update memory if is size has not changed"
-        it "should not allow a nil memory size"
-        it "should set any memory size >=64MB"
+        it "should not allow memory size < 64MB" do
+          @fog_interface.should_not_receive(:put_memory)
+          @vm.update_memory_size_in_mb(63)
+        end
+        it "should not update memory if is size has not changed" do
+          @fog_interface.should_not_receive(:put_memory)
+          @vm.update_memory_size_in_mb(@mock_vm_memory_size)
+        end
+        it "should gracefully handle a nil memory size" do
+          @fog_interface.should_not_receive(:put_memory)
+          @vm.update_memory_size_in_mb(nil)
+        end
+        it "should set memory size 64MB" do
+          @fog_interface.should_receive(:put_memory).with(@vm_id, 64)
+          @vm.update_memory_size_in_mb(64)
+        end
+        it "should set memory size 4096MB" do
+          @fog_interface.should_receive(:put_memory).with(@vm_id, 4096)
+          @vm.update_memory_size_in_mb(4096)
+        end
       end
     end
 
     describe '#update_cpu_count' do
       context "update the number of cpus in vm" do
-        it "should gracefully handle nil cpu count"
-        it "should not update cpu if is count has not changed"
-        it "should increase if necessary" do
-          #@fog_interface.should_receive(:put_cpu).with(@vm_id, 2)
-          #Provisioner::Vm.new(
-          #    @fog_interface,
-          #    @mock_vm,
-          #    @mock_vapp).update_cpu_count(2)
+        it "should gracefully handle nil cpu count" do
+          @fog_interface.should_not_receive(:put_cpu)
+          @vm.update_cpu_count(nil)
+        end
+        it "should not update cpu if is count has not changed" do
+          @fog_interface.should_not_receive(:put_cpu)
+          @vm.update_cpu_count(@mock_vm_cpu_count)
+        end
+        it "should not allow a zero cpu count" do
+          @fog_interface.should_not_receive(:put_cpu)
+          @vm.update_cpu_count(0)
+        end
+        it "should update cpu count in input is ok" do
+          @fog_interface.should_receive(:put_cpu).with(@vm_id, 2)
+          @vm.update_cpu_count(2)
         end
         it "should not allow zero CPUs"
       end
@@ -78,15 +105,14 @@ module Provisioner
                       :IpAddressAllocationMode => "MANUAL"
                   }
               ]})
-
-          Provisioner::Vm.new(
-              @fog_interface,
-              @mock_vm,
-              @mock_vapp).configure_network_interfaces(network_config)
+          @vm.configure_network_interfaces(network_config)
         end
 
         it "should configure multiple nics" do
-          network_config = [{:name => 'Default', :ip_address => '192.168.1.1'}, {:name => 'Monitoring', :ip_address => '192.168.2.1'}]
+          network_config = [
+            {:name => 'Default', :ip_address => '192.168.1.1'}, 
+            {:name => 'Monitoring', :ip_address => '192.168.2.1'}
+          ]
 
           @fog_interface.should_receive(:put_network_connection_system_section_vapp).with('1', {
               :PrimaryNetworkConnectionIndex => 0,
@@ -108,21 +134,15 @@ module Provisioner
                       :IpAddressAllocationMode => "MANUAL"
                   },
               ]})
-          Provisioner::Vm.new(
-            @fog_interface,
-            @mock_vm,
-            @mock_vapp).configure_network_interfaces(network_config)
+          @vm.configure_network_interfaces(network_config)
         end
 
         it "should configure no nics" do
           network_config = nil
-
           @fog_interface.should_not_receive(:put_network_connection_system_section_vapp)
-          Provisioner::Vm.new(
-              @fog_interface,
-              @mock_vm, @mock_vapp
-          ).configure_network_interfaces(network_config)
+          @vm.configure_network_interfaces(network_config)
         end
+
       end
 
     end
