@@ -25,7 +25,9 @@ module Provisioner
     end
 
     def update_memory_size_in_mb(new_memory)
-      unless memory.to_i == new_memory
+      return if new_memory.nil?
+      return if new_memory.to_i < 64 
+      unless memory.to_i == new_memory.to_i
         @fog_interface.put_memory(id, new_memory)
       end
     end
@@ -41,7 +43,9 @@ module Provisioner
     end
 
     def update_cpu_count(new_cpu_count)
-      unless cpu.to_i == new_cpu_count
+      return if new_cpu_count.nil?
+      return if new_cpu_count.to_i == 0
+      unless cpu.to_i == new_cpu_count.to_i
         @fog_interface.put_cpu(id, new_cpu_count)
       end
     end
