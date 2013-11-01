@@ -19,6 +19,7 @@ module Vcloud
       template = fog_interface.template(config[:catalog], config[:catalog_item])
 
       config[:vapps].each do |vapp_config|
+        VCloud.logger.info("Configuring vApp #{vapp_config[:name]}.")
         Provisioner::Vapp.new(fog_interface).provision(
             vapp_config, config[:vdc], template
         )
