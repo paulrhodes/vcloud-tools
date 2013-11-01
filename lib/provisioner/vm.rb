@@ -104,8 +104,10 @@ module Provisioner
     end
 
     def generate_preamble(script_path, facts)
-      ERB.new(File.read(script_path), nil, '>-').result(binding)
-      #Open3.capture2(File.join(root, 'bin/minifier.py'), stdin_data: script).first
+      root = '.'
+      vapp_name = vapp.name
+      script = ERB.new(File.read(script_path), nil, '>-').result(binding)
+      Open3.capture2(File.join(root, 'bin/minifier.py'), stdin_data: script).first
     end
 
     def virtual_hardware_section
