@@ -60,6 +60,10 @@ class FogInterface
     vcloud.get_vapp(id).body
   end
 
+  def get_vapp_by_vdc_and_name(vdc, name)
+    vdc.vapps.get_by_name(name)
+  end
+
   def put_cpu vm_id, cpu
     VCloud.logger.info("putting #{cpu} CPU(s) into VM #{vm_id}")
     task = vcloud.put_cpu(vm_id, cpu).body
@@ -82,6 +86,21 @@ class FogInterface
 
   def delete_vapp vapp_id
     task = vcloud.delete_vapp(vapp_id).body
+    vcloud.process_task(task)
+  end
+
+  def power_off_vapp vapp_id
+    task = vcloud.post_power_off_vapp(vapp_id).body
+    vcloud.process_task(task)
+  end
+
+  def power_on_vapp vapp_id
+    task = vcloud.post_power_on_vapp(vapp_id).body
+    vcloud.process_task(task)
+  end
+
+  def shutdown_vapp vapp_id
+    task = vcloud.post_shutdown_vapp(vapp_id).body
     vcloud.process_task(task)
   end
 
