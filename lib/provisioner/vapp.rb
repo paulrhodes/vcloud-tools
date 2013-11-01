@@ -11,16 +11,25 @@ module Provisioner
       @name = config[:name]
       network_names = config[:vm][:network_connections].collect { |h| h[:name] }
       networks = @fog_interface.find_networks(network_names, vdc_name)
-      vapp = @fog_interface.post_instantiate_vapp_template(
+      if model_vapp = @fog_interface.get_vapp_by_vdc_and_name(@vdc, @name)
+        vapp = @fog_interface.get_vapp(model_vapp.id)
+        VCloud.logger.info("Found existing vApp #{vapp[:name]} in vDC '#{vdc.name}'. Skipping.")
+      else
+        VCloud.logger.info("Instantiating new vApp #{@name} in vDC '#{vdc.name}'")
+        vapp = @fog_interface.post_instantiate_vapp_template(
           @fog_interface.vdc(vdc_name),
           template[:href].split('/').last,
           @name,
           InstantiationParams: build_network_config(networks)
-      ).body
-      @id = vapp[:href].split('/').last
-      vm = Provisioner::Vm.new(@fog_interface, vapp[:Children][:Vm].first, self)
-      vm.customize(config[:vm])
-      @fog_interface.get_vapp(vapp[:href].split('/').last)
+        ).body
+        @id = vapp[:href].split('/').last
+        vm = Provisioner::Vm.new(@fog_interface, vapp[:Children][:Vm].first, self)
+        vm.customize(config[:vm])
+      end
+    end
+
+    def running? vapp
+      vapp[:status].to_i == 4 ? true : false
     end
 
     private
