@@ -20,6 +20,13 @@
             facts:
               environment: "Development"
               role: "webserver"
+        metadata:
+            foo: 'bar'
+            multi_word_string: "hello there it's a nice day"
+            is_true: true
+            is_false: false
+            is_integer: 53
+            is_float: 3.142
     -
       name: "vapp-example-db-12"
       networks:

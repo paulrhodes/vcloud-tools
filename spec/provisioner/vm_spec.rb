@@ -8,6 +8,13 @@ module Provisioner
       @vm_id   = '1'
       @vapp_name = 'test-vm-1'
       @mock_vm_memory_size = 1024
+      @mock_metadata = {
+        :foo => "bar",
+        :false_thing => false,
+        :true_thing => true,
+        :number => 53,
+        :zero => 0,
+      }
       @mock_vm_cpu_count = 1
       @fog_interface = double(:fog_interface)
       @mock_vapp     = double(:vapp)
@@ -76,6 +83,23 @@ module Provisioner
           @vm.update_cpu_count(2)
         end
         it "should not allow zero CPUs"
+      end
+    end
+
+    describe '#update_metadata' do
+      context "it should update the key+value vm metadata" do
+        it "should handle empty metadata hash" do
+          @fog_interface.should_not_receive(:put_vapp_metadata_value)
+          @vm.update_metadata(nil)
+        end
+        it "should handle metadata of multiple types" do
+          @fog_interface.should_receive(:put_vapp_metadata_value).with(@vm_id, :foo, 'bar')
+          @fog_interface.should_receive(:put_vapp_metadata_value).with(@vm_id, :false_thing, false)
+          @fog_interface.should_receive(:put_vapp_metadata_value).with(@vm_id, :true_thing, true)
+          @fog_interface.should_receive(:put_vapp_metadata_value).with(@vm_id, :number, 53)
+          @fog_interface.should_receive(:put_vapp_metadata_value).with(@vm_id, :zero, 0)
+          @vm.update_metadata(@mock_metadata)
+        end
       end
     end
 
