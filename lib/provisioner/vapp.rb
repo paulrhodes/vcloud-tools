@@ -25,7 +25,9 @@ module Provisioner
         @id = vapp[:href].split('/').last
         vm = Provisioner::Vm.new(@fog_interface, vapp[:Children][:Vm].first, self)
         vm.customize(config[:vm])
+        vapp = @fog_interface.get_vapp(@id)
       end
+      vapp
     end
 
     def running? vapp
