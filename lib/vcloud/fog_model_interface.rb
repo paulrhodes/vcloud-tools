@@ -1,5 +1,7 @@
 module Vcloud
   class FogModelInterface
+    attr_reader :vcloud
+
     def initialize
       @vcloud = Fog::Compute::VcloudDirector.new
     end

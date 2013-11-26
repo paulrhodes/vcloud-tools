@@ -22,4 +22,8 @@ describe Vcloud::FogModelInterface do
 
     Vcloud::FogModelInterface.new.get_vm_by_href(vm_href).should == vm
   end
+
+  it "should expose the underlying vcloud fog model" do
+    Vcloud::FogModelInterface.new.vcloud.should_not be_nil
+  end
 end
